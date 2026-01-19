@@ -1,0 +1,91 @@
+name: win32-release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "curl-*"
+
+jobs:
+  build-win32:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # A) Build libcurl.dll (Win32 Release, Schannel, static MSVC runtime /MT)
+      - name: Configure libcurl.dll (Win32 Release /MT)
+        run: >
+          cmake -S . -B build-win32-shared
+          -G "Visual Studio 17 2022"
+          -A Win32
+          -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          -DBUILD_SHARED_LIBS=ON
+          -DBUILD_STATIC_LIBS=OFF
+          -DBUILD_CURL_EXE=OFF
+          -DCURL_USE_SCHANNEL=ON
+          -DCURL_DISABLE_LDAP=ON
+          -DBUILD_TESTING=OFF
+
+      - name: Build libcurl.dll
+        run: cmake --build build-win32-shared --config Release
+
+      # B) Build curl.exe (Win32 Release, Schannel, /MT, statically linked libcurl; no libcurl.dll import)
+      - name: Configure curl.exe static (Win32 Release /MT)
+        run: >
+          cmake -S . -B build-win32-static
+          -G "Visual Studio 17 2022"
+          -A Win32
+          -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          -DBUILD_SHARED_LIBS=OFF
+          -DBUILD_STATIC_LIBS=ON
+          -DBUILD_CURL_EXE=ON
+          -DBUILD_STATIC_CURL=ON
+          -DCURL_USE_SCHANNEL=ON
+          -DCURL_DISABLE_LDAP=ON
+          -DBUILD_TESTING=OFF
+
+      - name: Build curl.exe
+        run: cmake --build build-win32-static --config Release
+
+      # C) Stage outputs
+      - name: Stage outputs
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist\shared\bin | Out-Null
+          New-Item -ItemType Directory -Force dist\shared\lib | Out-Null
+          New-Item -ItemType Directory -Force dist\shared\include | Out-Null
+          New-Item -ItemType Directory -Force dist\static\bin | Out-Null
+          New-Item -ItemType Directory -Force dist\static\lib | Out-Null
+          New-Item -ItemType Directory -Force dist\static\include | Out-Null
+
+          Copy-Item build-win32-shared\lib\Release\libcurl.dll dist\shared\bin\
+          Copy-Item build-win32-shared\lib\Release\libcurl*.lib dist\shared\lib\ -ErrorAction SilentlyContinue
+          Copy-Item -Recurse include\curl dist\shared\include\curl
+
+          Copy-Item build-win32-static\src\Release\curl.exe dist\static\bin\
+          Copy-Item build-win32-static\lib\Release\libcurl*.lib dist\static\lib\ -ErrorAction SilentlyContinue
+          Copy-Item -Recurse include\curl dist\static\include\curl
+
+      # D) Verify curl.exe does not import libcurl.dll
+      - name: Verify curl.exe does not import libcurl.dll
+        shell: pwsh
+        run: |
+          $exe = "dist\static\bin\curl.exe"
+          $imports = & dumpbin /nologo /imports $exe
+          if ($imports -match "libcurl\.dll") {
+            Write-Error "curl.exe imports libcurl.dll (should be statically linked)."
+          } else {
+            Write-Host "OK: curl.exe does not import libcurl.dll."
+          }
+
+      # E) Upload artifacts for download in Actions UI
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: curl-win32-release
+          path: dist
+          retention-days: 30
