@@ -18,15 +18,15 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Configure remotes
+      - name: Add upstream and fetch
         run: |
           git remote add upstream https://github.com/curl/curl.git || true
           git fetch upstream --prune --tags
 
-      - name: Fast-forward default branch only
+      - name: Merge upstream into fork default branch
         run: |
           git checkout master
-          git merge --ff-only upstream/master
+          git merge upstream/master --no-edit
 
       - name: Push branch and tags using PAT
         env:
