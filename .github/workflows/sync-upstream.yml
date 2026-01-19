@@ -1,0 +1,37 @@
+name: sync-upstream
+
+on:
+  schedule:
+    - cron: "0 */6 * * *" # every 6 hours
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (no default credentials)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Configure remotes
+        run: |
+          git remote add upstream https://github.com/curl/curl.git || true
+          git fetch upstream --prune --tags
+
+      - name: Fast-forward default branch only
+        run: |
+          git checkout master
+          git merge --ff-only upstream/master
+
+      - name: Push branch and tags using PAT
+        env:
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          git remote set-url origin https://x-access-token:${SYNC_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+          git push origin master
+          git push origin --tags
