@@ -1,3 +1,4 @@
+# .github/workflows/win32-release.yml
 name: win32-release
 
 on:
@@ -17,7 +18,7 @@ jobs:
           fetch-depth: 0
 
       # -------------------------
-      # Install vcpkg (static deps, static CRT, Win32)
+      # vcpkg (Win32 static libs + static CRT)
       # -------------------------
       - name: Setup vcpkg
         shell: pwsh
@@ -28,17 +29,22 @@ jobs:
       - name: Install dependencies (Win32 static)
         shell: pwsh
         run: |
+          $env:VCPKG_DEFAULT_TRIPLET = "x86-windows-static"
+          $env:VCPKG_BUILD_TYPE = "release"
           $vcpkg = "$env:RUNNER_TEMP\vcpkg\vcpkg.exe"
           & $vcpkg install `
             zlib:x86-windows-static `
             brotli:x86-windows-static `
             zstd:x86-windows-static `
             nghttp2:x86-windows-static `
+            icu:x86-windows-static `
+            libiconv:x86-windows-static `
+            libunistring:x86-windows-static `
             libidn2:x86-windows-static `
             libpsl:x86-windows-static
 
       # -------------------------
-      # A) Build libcurl.dll (Win32, /MT, full features)
+      # A) libcurl.dll (Win32, Release, /MT, Schannel, full features)
       # -------------------------
       - name: Configure libcurl.dll
         run: >
@@ -48,11 +54,13 @@ jobs:
           -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
           -DCMAKE_TOOLCHAIN_FILE=${{ runner.temp }}\vcpkg\scripts\buildsystems\vcpkg.cmake
           -DVCPKG_TARGET_TRIPLET=x86-windows-static
+          -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON
           -DBUILD_SHARED_LIBS=ON
           -DBUILD_STATIC_LIBS=OFF
           -DBUILD_CURL_EXE=OFF
           -DBUILD_TESTING=OFF
           -DCURL_USE_SCHANNEL=ON
+          -DCURL_USE_OPENSSL=OFF
           -DUSE_NGHTTP2=ON
           -DUSE_LIBIDN2=ON
           -DCURL_USE_LIBPSL=ON
@@ -61,7 +69,7 @@ jobs:
         run: cmake --build build-win32-shared --config Release
 
       # -------------------------
-      # B) Build curl.exe (static libcurl, /MT)
+      # B) curl.exe (Win32, Release, /MT, static libcurl; no libcurl.dll import)
       # -------------------------
       - name: Configure curl.exe static
         run: >
@@ -71,12 +79,14 @@ jobs:
           -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
           -DCMAKE_TOOLCHAIN_FILE=${{ runner.temp }}\vcpkg\scripts\buildsystems\vcpkg.cmake
           -DVCPKG_TARGET_TRIPLET=x86-windows-static
+          -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON
           -DBUILD_SHARED_LIBS=OFF
           -DBUILD_STATIC_LIBS=ON
           -DBUILD_CURL_EXE=ON
           -DBUILD_STATIC_CURL=ON
           -DBUILD_TESTING=OFF
           -DCURL_USE_SCHANNEL=ON
+          -DCURL_USE_OPENSSL=OFF
           -DUSE_NGHTTP2=ON
           -DUSE_LIBIDN2=ON
           -DCURL_USE_LIBPSL=ON
@@ -114,7 +124,34 @@ jobs:
           }
 
       # -------------------------
-      # E) Upload artifacts to Actions UI
+      # E) Verify binaries are 32-bit (x86)
+      # -------------------------
+      - name: Verify binaries are 32-bit (x86)
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vs = & $vswhere -latest -property installationPath
+          $dumpbin = Get-ChildItem "$vs\VC\Tools\MSVC" -Recurse dumpbin.exe | Select-Object -First 1 -Expand FullName
+
+          foreach ($f in @("dist\static\bin\curl.exe", "dist\shared\bin\libcurl.dll")) {
+            $h = & $dumpbin /nologo /headers $f
+            if ($h -notmatch "machine \\(x86\\)") {
+              Write-Error "$f is not x86"
+            } else {
+              Write-Host "OK: $f is x86"
+            }
+          }
+
+      # -------------------------
+      # F) Show curl feature summary
+      # -------------------------
+      - name: Show curl -V
+        shell: pwsh
+        run: |
+          dist\static\bin\curl.exe -V
+
+      # -------------------------
+      # G) Upload artifacts (Actions UI)
       # -------------------------
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
