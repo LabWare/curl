@@ -26,6 +26,7 @@ jobs:
           git clone https://github.com/microsoft/vcpkg $env:RUNNER_TEMP\vcpkg
           & $env:RUNNER_TEMP\vcpkg\bootstrap-vcpkg.bat -disableMetrics
 
+      # Force triplet selection and show what vcpkg thinks the settings are.
       - name: Install dependencies (Win32 static)
         shell: pwsh
         run: |
@@ -33,10 +34,19 @@ jobs:
           $env:VCPKG_HOST_TRIPLET    = "x64-windows"
           $env:VCPKG_BUILD_TYPE      = "release"
 
+          Write-Host "VCPKG_DEFAULT_TRIPLET=$env:VCPKG_DEFAULT_TRIPLET"
+          Write-Host "VCPKG_HOST_TRIPLET=$env:VCPKG_HOST_TRIPLET"
+          Write-Host "VCPKG_BUILD_TYPE=$env:VCPKG_BUILD_TYPE"
+
           $vcpkg = "$env:RUNNER_TEMP\vcpkg\vcpkg.exe"
+
+          # Use an explicit --triplet and clean any previously installed triplets in this vcpkg clone
+          & $vcpkg remove --outdated --recurse || $true
+
           & $vcpkg install `
             zlib brotli zstd nghttp2 icu libiconv libunistring libidn2 libpsl `
-            --triplet x86-windows-static
+            --triplet x86-windows-static `
+            --clean-after-build
 
       # -------------------------
       # A) libcurl.dll (Win32, Release, /MT, Schannel, full features)
