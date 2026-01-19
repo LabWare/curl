@@ -16,73 +16,106 @@ jobs:
         with:
           fetch-depth: 0
 
-      # A) Build libcurl.dll (Win32 Release, Schannel, static MSVC runtime /MT)
-      - name: Configure libcurl.dll (Win32 Release /MT)
+      # -------------------------
+      # Install vcpkg (static deps, static CRT, Win32)
+      # -------------------------
+      - name: Setup vcpkg
+        shell: pwsh
+        run: |
+          git clone https://github.com/microsoft/vcpkg $env:RUNNER_TEMP\vcpkg
+          & $env:RUNNER_TEMP\vcpkg\bootstrap-vcpkg.bat -disableMetrics
+
+      - name: Install dependencies (Win32 static)
+        shell: pwsh
+        run: |
+          $vcpkg = "$env:RUNNER_TEMP\vcpkg\vcpkg.exe"
+          & $vcpkg install `
+            zlib:x86-windows-static `
+            brotli:x86-windows-static `
+            zstd:x86-windows-static `
+            nghttp2:x86-windows-static `
+            libidn2:x86-windows-static `
+            libpsl:x86-windows-static
+
+      # -------------------------
+      # A) Build libcurl.dll (Win32, /MT, full features)
+      # -------------------------
+      - name: Configure libcurl.dll
         run: >
           cmake -S . -B build-win32-shared
           -G "Visual Studio 17 2022"
           -A Win32
           -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          -DCMAKE_TOOLCHAIN_FILE=${{ runner.temp }}\vcpkg\scripts\buildsystems\vcpkg.cmake
+          -DVCPKG_TARGET_TRIPLET=x86-windows-static
           -DBUILD_SHARED_LIBS=ON
           -DBUILD_STATIC_LIBS=OFF
           -DBUILD_CURL_EXE=OFF
-          -DCURL_USE_SCHANNEL=ON
-          -DCURL_DISABLE_LDAP=ON
           -DBUILD_TESTING=OFF
+          -DCURL_USE_SCHANNEL=ON
+          -DUSE_NGHTTP2=ON
+          -DUSE_LIBIDN2=ON
+          -DCURL_USE_LIBPSL=ON
 
       - name: Build libcurl.dll
         run: cmake --build build-win32-shared --config Release
 
-      # B) Build curl.exe (Win32 Release, Schannel, /MT, statically linked libcurl; no libcurl.dll import)
-      - name: Configure curl.exe static (Win32 Release /MT)
+      # -------------------------
+      # B) Build curl.exe (static libcurl, /MT)
+      # -------------------------
+      - name: Configure curl.exe static
         run: >
           cmake -S . -B build-win32-static
           -G "Visual Studio 17 2022"
           -A Win32
           -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
+          -DCMAKE_TOOLCHAIN_FILE=${{ runner.temp }}\vcpkg\scripts\buildsystems\vcpkg.cmake
+          -DVCPKG_TARGET_TRIPLET=x86-windows-static
           -DBUILD_SHARED_LIBS=OFF
           -DBUILD_STATIC_LIBS=ON
           -DBUILD_CURL_EXE=ON
           -DBUILD_STATIC_CURL=ON
-          -DCURL_USE_SCHANNEL=ON
-          -DCURL_DISABLE_LDAP=ON
           -DBUILD_TESTING=OFF
+          -DCURL_USE_SCHANNEL=ON
+          -DUSE_NGHTTP2=ON
+          -DUSE_LIBIDN2=ON
+          -DCURL_USE_LIBPSL=ON
 
       - name: Build curl.exe
         run: cmake --build build-win32-static --config Release
 
+      # -------------------------
       # C) Stage outputs
+      # -------------------------
       - name: Stage outputs
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist\shared\bin | Out-Null
-          New-Item -ItemType Directory -Force dist\shared\lib | Out-Null
-          New-Item -ItemType Directory -Force dist\shared\include | Out-Null
           New-Item -ItemType Directory -Force dist\static\bin | Out-Null
-          New-Item -ItemType Directory -Force dist\static\lib | Out-Null
-          New-Item -ItemType Directory -Force dist\static\include | Out-Null
 
           Copy-Item build-win32-shared\lib\Release\libcurl.dll dist\shared\bin\
-          Copy-Item build-win32-shared\lib\Release\libcurl*.lib dist\shared\lib\ -ErrorAction SilentlyContinue
-          Copy-Item -Recurse include\curl dist\shared\include\curl
-
           Copy-Item build-win32-static\src\Release\curl.exe dist\static\bin\
-          Copy-Item build-win32-static\lib\Release\libcurl*.lib dist\static\lib\ -ErrorAction SilentlyContinue
-          Copy-Item -Recurse include\curl dist\static\include\curl
 
+      # -------------------------
       # D) Verify curl.exe does not import libcurl.dll
+      # -------------------------
       - name: Verify curl.exe does not import libcurl.dll
         shell: pwsh
         run: |
           $exe = "dist\static\bin\curl.exe"
-          $imports = & dumpbin /nologo /imports $exe
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vs = & $vswhere -latest -property installationPath
+          $dumpbin = Get-ChildItem "$vs\VC\Tools\MSVC" -Recurse dumpbin.exe | Select-Object -First 1 -Expand FullName
+          $imports = & $dumpbin /nologo /imports $exe
           if ($imports -match "libcurl\.dll") {
-            Write-Error "curl.exe imports libcurl.dll (should be statically linked)."
+            Write-Error "curl.exe imports libcurl.dll"
           } else {
-            Write-Host "OK: curl.exe does not import libcurl.dll."
+            Write-Host "OK: no libcurl.dll import"
           }
 
-      # E) Upload artifacts for download in Actions UI
+      # -------------------------
+      # E) Upload artifacts to Actions UI
+      # -------------------------
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
