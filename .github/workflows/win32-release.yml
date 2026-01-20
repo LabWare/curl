@@ -26,6 +26,13 @@ jobs:
           git clone https://github.com/microsoft/vcpkg $env:RUNNER_TEMP\vcpkg
           & $env:RUNNER_TEMP\vcpkg\bootstrap-vcpkg.bat -disableMetrics
 
+      # Enable vcpkg binary caching
+      - name: Enable vcpkg binary cache
+        shell: pwsh
+        run: |
+          $env:VCPKG_BINARY_SOURCES = "clear;x-gha,readwrite"
+          echo "VCPKG_BINARY_SOURCES=$env:VCPKG_BINARY_SOURCES" >> $env:GITHUB_ENV
+
       # Force triplet selection and show what vcpkg thinks the settings are.
       - name: Install dependencies (Win32 static)
         shell: pwsh
@@ -50,6 +57,7 @@ jobs:
 
       # -------------------------
       # A) libcurl.dll (Win32, Release, /MT, Schannel, full features)
+      #    Build as static lib but configure for DLL output
       # -------------------------
       - name: Configure libcurl.dll
         run: >
@@ -69,6 +77,7 @@ jobs:
           -DUSE_NGHTTP2=ON
           -DUSE_LIBIDN2=ON
           -DCURL_USE_LIBPSL=ON
+          -DCURL_STATIC_CRT=ON
 
       - name: Build libcurl.dll
         run: cmake --build build-win32-shared --config Release
