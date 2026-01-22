@@ -84,14 +84,16 @@ if(LIBPSL_FOUND)
     link_directories(${_libpsl_LIBRARY_DIRS})
   endif()
 
+  # On Windows static builds without pkg-config, we need to explicitly link transitive dependencies
+  if(WIN32 AND NOT BUILD_SHARED_LIBS AND NOT _libpsl_FOUND)
+    find_library(_libpsl_icuuc NAMES "icuuc" "libicuuc")
+    find_library(_libpsl_icudt NAMES "icudt" "libicudt")
+    find_library(_libpsl_iconv NAMES "iconv" "libiconv")
 
-  find_library(_libpsl_icuuc NAMES "icuuc" "libicuuc")
-  find_library(_libpsl_icudt NAMES "icudt" "libicudt")
-  find_library(_libpsl_iconv NAMES "iconv" "libiconv")
-
-  list(APPEND _libpsl_LIBRARIES ${_libpsl_icuuc})
-  list(APPEND _libpsl_LIBRARIES ${_libpsl_icudt})
-  list(APPEND _libpsl_LIBRARIES ${_libpsl_iconv})
+    list(APPEND _libpsl_LIBRARIES ${_libpsl_icuuc})
+    list(APPEND _libpsl_LIBRARIES ${_libpsl_icudt})
+    list(APPEND _libpsl_LIBRARIES ${_libpsl_iconv})
+  endif()
 
   if(NOT TARGET CURL::libpsl)
     add_library(CURL::libpsl INTERFACE IMPORTED)
