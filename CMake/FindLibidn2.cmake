@@ -84,6 +84,9 @@ if(LIBIDN2_FOUND)
     link_directories(${_libidn2_LIBRARY_DIRS})
   endif()
 
+  find_library(_libidn2_unistring NAMES "unistring" "libunistring")
+  list(APPEND _libidn2_LIBRARIES ${_libidn2_unistring})
+
   if(NOT TARGET CURL::libidn2)
     add_library(CURL::libidn2 INTERFACE IMPORTED)
     set_target_properties(CURL::libidn2 PROPERTIES

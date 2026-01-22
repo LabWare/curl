@@ -84,6 +84,15 @@ if(LIBPSL_FOUND)
     link_directories(${_libpsl_LIBRARY_DIRS})
   endif()
 
+
+  find_library(_libpsl_icuuc NAMES "icuuc" "libicuuc")
+  find_library(_libpsl_icudt NAMES "icudt" "libicudt")
+  find_library(_libpsl_iconv NAMES "iconv" "libiconv")
+
+  list(APPEND _libpsl_LIBRARIES ${_libpsl_icuuc})
+  list(APPEND _libpsl_LIBRARIES ${_libpsl_icudt})
+  list(APPEND _libpsl_LIBRARIES ${_libpsl_iconv})
+
   if(NOT TARGET CURL::libpsl)
     add_library(CURL::libpsl INTERFACE IMPORTED)
     set_target_properties(CURL::libpsl PROPERTIES
