@@ -1,3 +1,7 @@
+# Copyright (C) Labware
+#
+# SPDX-License-Identifier: curl
+
 param(
     [string]$VcpkgRoot = $env:VCPKG_ROOT,
     [string]$Triplet = "x86-windows-static"
