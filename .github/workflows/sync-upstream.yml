@@ -22,21 +22,22 @@ jobs:
         run: |
           git remote add upstream https://github.com/curl/curl.git || true
           git fetch upstream --prune --tags
-    
-      - name: Set git identity
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin upstream-master || true
 
-      - name: Merge upstream into fork default branch
+      - name: Update upstream-master to match upstream/master
+        run: |
+          git checkout -B upstream-master upstream/master
+
+      - name: Rebase master onto upstream-master
         run: |
           git checkout master
-          git merge upstream/master --no-edit
+          git rebase upstream-master
 
-      - name: Push branch and tags using PAT
+      - name: Push branches and tags using PAT
         env:
           SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
         run: |
           git remote set-url origin https://x-access-token:${SYNC_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
-          git push origin master
+          git push origin upstream-master
+          git push origin master --force-with-lease
           git push origin --tags
