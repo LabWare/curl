@@ -84,9 +84,9 @@ if(LIBIDN2_FOUND)
     link_directories(${_libidn2_LIBRARY_DIRS})
   endif()
 
-  # On Windows static builds without pkg-config, we need to explicitly link transitive dependencies
-  if(WIN32 AND NOT BUILD_SHARED_LIBS AND NOT _libidn2_FOUND)
-    find_library(_libidn2_unistring NAMES "unistring" "libunistring")
+  # On Windows static builds, optionally link transitive dependencies explicitly
+  if(CURL_STATIC_DEPS AND NOT _libidn2_FOUND)
+    find_library(_libidn2_unistring NAMES "unistring" "libunistring" REQUIRED)
     list(APPEND _libidn2_LIBRARIES ${_libidn2_unistring})
   endif()
 

@@ -26,5 +26,6 @@ cmake -S . -B build-win32 -G "Visual Studio 17 2022" -A Win32 `
     -DBUILD_STATIC_LIBS=ON `
     -DBUILD_CURL_EXE=ON `
     -DBUILD_STATIC_CURL=ON `
-    -DCURL_STATIC_CRT=ON
+    -DCURL_STATIC_CRT=ON `
+    -DCURL_STATIC_DEPS=ON
 cmake --build build-win32 --config Release
