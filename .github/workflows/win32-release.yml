@@ -43,6 +43,7 @@ jobs:
       - name: Setup vcpkg
         shell: pwsh
         run: |
+          # shellcheck disable=all
           git clone https://github.com/microsoft/vcpkg $env:RUNNER_TEMP\vcpkg
           & $env:RUNNER_TEMP\vcpkg\bootstrap-vcpkg.bat -disableMetrics
 
@@ -51,11 +52,13 @@ jobs:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
         shell: pwsh
         run: |
+          # shellcheck disable=all
           echo "VCPKG_BINARY_SOURCES=$env:VCPKG_BINARY_SOURCES" >> $env:GITHUB_ENV
 
       - name: Install dependencies (Win32 static)
         shell: pwsh
         run: |
+          # shellcheck disable=all
           $vcpkg = "$env:RUNNER_TEMP\vcpkg\vcpkg.exe"
           & $vcpkg remove --outdated --recurse || $true
           & $vcpkg install `
@@ -69,6 +72,7 @@ jobs:
       - name: Build libcurl.dll and curl.exe
         shell: pwsh
         run: |
+          # shellcheck disable=all
           ./build.ps1 -VcpkgRoot "$env:RUNNER_TEMP\vcpkg"
 
       - name: Stage and verify outputs
