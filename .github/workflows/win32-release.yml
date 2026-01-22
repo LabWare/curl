@@ -10,8 +10,7 @@ on:
     tags:
       - "curl-*"
 
-permissions:
-  contents: write
+permissions: {}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,6 +20,8 @@ jobs:
   build-win32:
     name: 'Build Win32'
     runs-on: windows-latest
+    permissions:
+      contents: write  # for gh release upload/create
 
     steps:
       - name: Checkout
