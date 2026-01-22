@@ -82,17 +82,23 @@ jobs:
           cp build-win32/lib/Release/libcurl.dll dist/bin/
           cp build-win32/src/Release/curl.exe dist/bin/
 
-          # Verify curl.exe does not import libcurl.dll
-          if dumpbin //nologo //imports dist/bin/curl.exe | grep -qi "libcurl\.dll"; then
-            echo "ERROR: curl.exe imports libcurl.dll"; exit 1
-          fi
-
-          # Verify binaries are 32-bit (x86)
-          dumpbin //nologo //headers dist/bin/curl.exe | grep "machine (x86)" || { echo "built files are not x86"; exit 1; }
-          dumpbin //nologo //headers dist/bin/libcurl.dll | grep "machine (x86)" || { echo "built files are not x86"; exit 1; }
+          # Verify binaries are 32-bit (x86) using file command
+          file dist/bin/curl.exe | grep -q "PE32 executable" || { echo "curl.exe is not 32-bit x86"; exit 1; }
+          file dist/bin/libcurl.dll | grep -q "PE32 executable" || { echo "libcurl.dll is not 32-bit x86"; exit 1; }
 
           # Show curl feature summary
           dist/bin/curl.exe -V
+
+      - name: Verify curl.exe does not import libcurl.dll
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath = & $vswhere -latest -property installationPath
+          $imports = cmd /c "`"$vsPath\VC\Auxiliary\Build\vcvars32.bat`" >nul 2>&1 && dumpbin /nologo /imports dist\bin\curl.exe"
+          if ($imports -match "libcurl\.dll") {
+            Write-Error "ERROR: curl.exe imports libcurl.dll"
+            exit 1
+          }
 
       - name: Upload artifacts
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
