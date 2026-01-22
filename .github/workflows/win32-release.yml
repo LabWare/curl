@@ -33,143 +33,61 @@ jobs:
           $env:VCPKG_BINARY_SOURCES = "clear;x-gha,readwrite"
           echo "VCPKG_BINARY_SOURCES=$env:VCPKG_BINARY_SOURCES" >> $env:GITHUB_ENV
 
-      # Force triplet selection and show what vcpkg thinks the settings are.
       - name: Install dependencies (Win32 static)
         shell: pwsh
         run: |
-          $env:VCPKG_DEFAULT_TRIPLET = "x86-windows-static"
-          $env:VCPKG_HOST_TRIPLET    = "x64-windows"
-          $env:VCPKG_BUILD_TYPE      = "release"
-
-          Write-Host "VCPKG_DEFAULT_TRIPLET=$env:VCPKG_DEFAULT_TRIPLET"
-          Write-Host "VCPKG_HOST_TRIPLET=$env:VCPKG_HOST_TRIPLET"
-          Write-Host "VCPKG_BUILD_TYPE=$env:VCPKG_BUILD_TYPE"
-
           $vcpkg = "$env:RUNNER_TEMP\vcpkg\vcpkg.exe"
-
-          # Use an explicit --triplet and clean any previously installed triplets in this vcpkg clone
           & $vcpkg remove --outdated --recurse || $true
-
           & $vcpkg install `
             zlib brotli zstd nghttp2 icu libiconv libunistring libidn2 libpsl `
             --triplet x86-windows-static `
             --clean-after-build
 
       # -------------------------
-      # A) libcurl.dll (Win32, Release, /MT, Schannel, full features)
-      #    Build as static lib but configure for DLL output
+      # Build libcurl.dll and curl.exe using build script
       # -------------------------
-      - name: Configure libcurl.dll
-        run: >
-          cmake -S . -B build-win32-shared
-          -G "Visual Studio 17 2022"
-          -A Win32
-          -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
-          -DCMAKE_TOOLCHAIN_FILE=${{ runner.temp }}\vcpkg\scripts\buildsystems\vcpkg.cmake
-          -DVCPKG_TARGET_TRIPLET=x86-windows-static
-          -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON
-          -DBUILD_SHARED_LIBS=ON
-          -DBUILD_STATIC_LIBS=OFF
-          -DBUILD_CURL_EXE=OFF
-          -DBUILD_TESTING=OFF
-          -DCURL_USE_SCHANNEL=ON
-          -DCURL_USE_OPENSSL=OFF
-          -DUSE_NGHTTP2=ON
-          -DUSE_LIBIDN2=ON
-          -DCURL_USE_LIBPSL=ON
-          -DCURL_STATIC_CRT=ON
-
-      - name: Build libcurl.dll
-        run: cmake --build build-win32-shared --config Release
-
-      # -------------------------
-      # B) curl.exe (Win32, Release, /MT, static libcurl; no libcurl.dll import)
-      # -------------------------
-      - name: Configure curl.exe static
-        run: >
-          cmake -S . -B build-win32-static
-          -G "Visual Studio 17 2022"
-          -A Win32
-          -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
-          -DCMAKE_TOOLCHAIN_FILE=${{ runner.temp }}\vcpkg\scripts\buildsystems\vcpkg.cmake
-          -DVCPKG_TARGET_TRIPLET=x86-windows-static
-          -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON
-          -DBUILD_SHARED_LIBS=OFF
-          -DBUILD_STATIC_LIBS=ON
-          -DBUILD_CURL_EXE=ON
-          -DBUILD_STATIC_CURL=ON
-          -DBUILD_TESTING=OFF
-          -DCURL_USE_SCHANNEL=ON
-          -DCURL_USE_OPENSSL=OFF
-          -DUSE_NGHTTP2=ON
-          -DUSE_LIBIDN2=ON
-          -DCURL_USE_LIBPSL=ON
-
-      - name: Build curl.exe
-        run: cmake --build build-win32-static --config Release
-
-      # -------------------------
-      # C) Stage outputs
-      # -------------------------
-      - name: Stage outputs
+      - name: Build libcurl.dll and curl.exe
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force dist\shared\bin | Out-Null
-          New-Item -ItemType Directory -Force dist\static\bin | Out-Null
+          ./build.ps1 -VcpkgRoot "$env:RUNNER_TEMP\vcpkg"
 
-          Copy-Item build-win32-shared\lib\Release\libcurl.dll dist\shared\bin\
-          Copy-Item build-win32-static\src\Release\curl.exe dist\static\bin\
-
-      # -------------------------
-      # D) Verify curl.exe does not import libcurl.dll
-      # -------------------------
-      - name: Verify curl.exe does not import libcurl.dll
-        shell: pwsh
+      - name: Stage and verify outputs
+        shell: bash
         run: |
-          $exe = "dist\static\bin\curl.exe"
-          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          $vs = & $vswhere -latest -property installationPath
-          $dumpbin = Get-ChildItem "$vs\VC\Tools\MSVC" -Recurse dumpbin.exe | Select-Object -First 1 -Expand FullName
-          $imports = & $dumpbin /nologo /imports $exe
-          if ($imports -match "libcurl\.dll") {
-            Write-Error "curl.exe imports libcurl.dll"
-          } else {
-            Write-Host "OK: no libcurl.dll import"
-          }
+          mkdir -p dist/bin
+          cp build-win32/lib/Release/libcurl.dll dist/bin/
+          cp build-win32/src/Release/curl.exe dist/bin/
 
-      # -------------------------
-      # E) Verify binaries are 32-bit (x86)
-      # -------------------------
-      - name: Verify binaries are 32-bit (x86)
-        shell: pwsh
-        run: |
-          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          $vs = & $vswhere -latest -property installationPath
-          $dumpbin = Get-ChildItem "$vs\VC\Tools\MSVC" -Recurse dumpbin.exe | Select-Object -First 1 -Expand FullName
+          # Verify curl.exe does not import libcurl.dll
+          if dumpbin //nologo //imports dist/bin/curl.exe | grep -qi "libcurl\.dll"; then
+            echo "ERROR: curl.exe imports libcurl.dll"; exit 1
+          fi
 
-          foreach ($f in @("dist\static\bin\curl.exe", "dist\shared\bin\libcurl.dll")) {
-            $h = & $dumpbin /nologo /headers $f
-            if ($h -notmatch "machine \\(x86\\)") {
-              Write-Error "$f is not x86"
-            } else {
-              Write-Host "OK: $f is x86"
-            }
-          }
+          # Verify binaries are 32-bit (x86)
+          dumpbin //nologo //headers dist/bin/curl.exe | grep "machine (x86)" || { echo "built files are not x86"; exit 1; }
+          dumpbin //nologo //headers dist/bin/libcurl.dll | grep "machine (x86)" || { echo "built files are not x86"; exit 1; }
 
-      # -------------------------
-      # F) Show curl feature summary
-      # -------------------------
-      - name: Show curl -V
-        shell: pwsh
-        run: |
-          dist\static\bin\curl.exe -V
+          # Show curl feature summary
+          dist/bin/curl.exe -V
 
-      # -------------------------
-      # G) Upload artifacts (Actions UI)
-      # -------------------------
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: curl-win32-release
           path: dist
           retention-days: 30
+
+      - name: Upload to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          zip -j dist/bin/curl-win32-x86.zip dist/bin/curl.exe dist/bin/libcurl.dll
+          gh release upload ${{ github.ref_name }} \
+            dist/bin/curl-win32-x86.zip \
+            --clobber || \
+          gh release create ${{ github.ref_name }} \
+            --title "${{ github.ref_name }}" \
+            --notes "## Win32 (x86) builds" \
+            dist/bin/curl-win32-x86.zip
