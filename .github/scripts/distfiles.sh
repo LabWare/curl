@@ -17,6 +17,7 @@ gitonly=".git*
 ^renovate.json
 ^REUSE.toml
 ^SECURITY.md
+^build.ps1
 ^LICENSES/*
 ^docs/examples/adddocsref.pl
 ^docs/tests/CI.md
