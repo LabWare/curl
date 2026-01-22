@@ -72,4 +72,4 @@ libstandaloneengine.a
 tests/string
 tests/config
 tests/ech-log/
-build-win32-shared/
+build-win32/
