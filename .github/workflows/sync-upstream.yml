@@ -49,7 +49,7 @@ jobs:
         run: |
           git fetch origin --tags
           EXISTING_LW_TAGS=$(git tag -l 'lw-curl-*')
-          
+
           NEW_TAGS=""
           for tag in $(git tag -l 'curl-*' --sort=-version:refname | head -20); do
             # Skip tags older than 8.18
@@ -61,13 +61,13 @@ jobs:
                 continue
               fi
             fi
-            
+
             LW_TAG="lw-${tag}"
             if ! echo "$EXISTING_LW_TAGS" | grep -q "^${LW_TAG}$"; then
               NEW_TAGS="${NEW_TAGS} ${tag}"
             fi
           done
-          
+
           echo "new_tags=${NEW_TAGS}" >> $GITHUB_OUTPUT
           echo "New upstream tags:${NEW_TAGS:-" (none)"}"
 
@@ -78,18 +78,18 @@ jobs:
         run: |
           git checkout master
           git format-patch upstream-master --stdout > /tmp/labware-patches.patch
-          
+
           if [ ! -s /tmp/labware-patches.patch ]; then
             echo "No patches to apply"
             exit 0
           fi
-          
+
           for tag in $NEW_TAGS; do
             echo "Processing: $tag"
             LW_TAG="lw-${tag}"
-            
+
             git checkout -B "temp-${tag}" "${tag}"
-            
+
             if git am --3way /tmp/labware-patches.patch; then
               git tag -a "${LW_TAG}" -m "Labware release based on ${tag}"
               echo "Created tag: ${LW_TAG}"
@@ -97,7 +97,7 @@ jobs:
               echo "Failed to apply patches to ${tag}, skipping"
               git am --abort || true
             fi
-            
+
             git checkout master
           done
 
