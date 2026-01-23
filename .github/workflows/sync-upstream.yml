@@ -77,15 +77,25 @@ jobs:
           NEW_TAGS: ${{ steps.detect-tags.outputs.new_tags }}
         run: |
           git checkout master
-          git format-patch upstream-master --stdout > /tmp/labware-patches.patch
+
+          # Generate patches excluding [lw-delete-jobs] commits
+          git rev-list upstream-master..master --reverse | while read sha; do
+            if ! git log -1 --format=%s "$sha" | grep -q '^\[lw-delete-jobs\]'; then
+              git format-patch -1 "$sha" --stdout >> /tmp/labware-patches.patch
+            fi
+          done
+
+          # Get [lw-delete-jobs] commits to apply separately
+          DELETE_COMMITS=$(git rev-list upstream-master..master --reverse | while read sha; do
+            if git log -1 --format=%s "$sha" | grep -q '^\[lw-delete-jobs\]'; then
+              echo "$sha"
+            fi
+          done)
 
           if [ ! -s /tmp/labware-patches.patch ]; then
             echo "No patches to apply"
             exit 0
           fi
-
-          # Fetch the lw-delete-workflows branch for file deletions
-          git fetch origin lw-delete-workflows || true
 
           for tag in $NEW_TAGS; do
             echo "Processing: $tag"
@@ -94,13 +104,15 @@ jobs:
             git checkout -B "temp-${tag}" "${tag}"
 
             if git am --3way /tmp/labware-patches.patch; then
-              # Delete upstream workflow files by cherry-picking deletion branch
-              if ! git cherry-pick origin/lw-delete-workflows; then
-                # Resolve modify/delete conflicts by accepting deletions
-                git diff --name-only --diff-filter=U | xargs -r git rm -f
-                git cherry-pick --continue --no-edit
-              fi
-              echo "Applied workflow file deletions"
+              # Apply [lw-delete-jobs] commits separately
+              for sha in $DELETE_COMMITS; do
+                if ! git cherry-pick "$sha"; then
+                  # Resolve modify/delete conflicts by accepting deletions
+                  git diff --name-only --diff-filter=U | xargs -r git rm -f
+                  git cherry-pick --continue --no-edit
+                fi
+              done
+              echo "Applied patches and deletions"
 
               git tag -a "${LW_TAG}" -m "Labware release based on ${tag}"
               echo "Created tag: ${LW_TAG}"
