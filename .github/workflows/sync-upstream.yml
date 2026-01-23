@@ -44,6 +44,61 @@ jobs:
           git checkout master
           git rebase upstream-master
 
+      - name: Detect new upstream tags
+        id: detect-tags
+        run: |
+          git fetch origin --tags
+          EXISTING_LW_TAGS=$(git tag -l 'lw-curl-*')
+          
+          NEW_TAGS=""
+          for tag in $(git tag -l 'curl-*' --sort=-version:refname | head -20); do
+            # Skip tags older than 8.18
+            VERSION=$(echo "$tag" | sed -n 's/^curl-\([0-9]*_[0-9]*\).*/\1/p')
+            MAJOR=$(echo "$VERSION" | cut -d'_' -f1)
+            MINOR=$(echo "$VERSION" | cut -d'_' -f2)
+            if [ -n "$MAJOR" ] && [ -n "$MINOR" ]; then
+              if [ "$MAJOR" -lt 8 ] || { [ "$MAJOR" -eq 8 ] && [ "$MINOR" -lt 18 ]; }; then
+                continue
+              fi
+            fi
+            
+            LW_TAG="lw-${tag}"
+            if ! echo "$EXISTING_LW_TAGS" | grep -q "^${LW_TAG}$"; then
+              NEW_TAGS="${NEW_TAGS} ${tag}"
+            fi
+          done
+          
+          echo "new_tags=${NEW_TAGS}" >> $GITHUB_OUTPUT
+          echo "New upstream tags:${NEW_TAGS:-" (none)"}"
+
+      - name: Apply patches and create lw-curl tags
+        if: steps.detect-tags.outputs.new_tags != ''
+        run: |
+          git checkout master
+          git format-patch upstream-master --stdout > /tmp/labware-patches.patch
+          
+          if [ ! -s /tmp/labware-patches.patch ]; then
+            echo "No patches to apply"
+            exit 0
+          fi
+          
+          for tag in ${{ steps.detect-tags.outputs.new_tags }}; do
+            echo "Processing: $tag"
+            LW_TAG="lw-${tag}"
+            
+            git checkout -B "temp-${tag}" "${tag}"
+            
+            if git am --3way /tmp/labware-patches.patch; then
+              git tag -a "${LW_TAG}" -m "Labware release based on ${tag}"
+              echo "Created tag: ${LW_TAG}"
+            else
+              echo "Failed to apply patches to ${tag}, skipping"
+              git am --abort || true
+            fi
+            
+            git checkout master
+          done
+
       - name: Push branches and tags using PAT
         env:
           SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
