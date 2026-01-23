@@ -122,3 +122,4 @@ jobs:
             --title "$REF_NAME" \
             --notes "## Win32 (x86) builds" \
             dist/bin/curl-win32-x86.zip
+
