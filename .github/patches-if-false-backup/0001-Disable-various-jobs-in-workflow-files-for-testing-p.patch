@@ -1,0 +1,308 @@
+From c31a791124cc48107f679781f23dffa88992f719 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Javier=20Pim=C3=A1s?= <elpochodelagente@gmail.com>
+Date: Fri, 23 Jan 2026 10:13:16 -0300
+Subject: [PATCH] Disable various jobs in workflow files for testing purposes
+
+---
+ .github/workflows/checkdocs.yml          | 3 +++
+ .github/workflows/codeql.yml             | 3 ++-
+ .github/workflows/configure-vs-cmake.yml | 2 ++
+ .github/workflows/curl-for-win.yml       | 5 +++++
+ .github/workflows/distcheck.yml          | 9 +++++++++
+ .github/workflows/http3-linux.yml        | 1 +
+ .github/workflows/macos.yml              | 2 ++
+ .github/workflows/non-native.yml         | 6 ++++--
+ .github/workflows/windows.yml            | 4 ++++
+ 9 files changed, 32 insertions(+), 3 deletions(-)
+
+diff --git a/.github/workflows/checkdocs.yml b/.github/workflows/checkdocs.yml
+index 1714fce443..a3d1899366 100644
+--- a/.github/workflows/checkdocs.yml
++++ b/.github/workflows/checkdocs.yml
+@@ -89,6 +89,7 @@ jobs:
+           proselint check docs/internals/CHECKSRC.md docs/libcurl/opts/CURLOPT_INTERFACE.md docs/cmdline-opts/interface.md
+ 
+   pyspelling:
++    if: false
+     name: 'pyspelling'
+     runs-on: ubuntu-latest
+     steps:
+@@ -117,6 +118,7 @@ jobs:
+           pyspelling --verbose --jobs 5 --config .github/scripts/pyspelling.yaml
+ 
+   badwords-synopsis:
++    if: false
+     name: 'badwords, synopsis'
+     runs-on: ubuntu-24.04-arm
+     steps:
+@@ -131,6 +133,7 @@ jobs:
+         run: .github/scripts/verify-synopsis.pl docs/libcurl/curl*.md
+ 
+   man-examples:
++    if: false
+     name: 'man-examples'
+     runs-on: ubuntu-24.04-arm
+     steps:
+diff --git a/.github/workflows/codeql.yml b/.github/workflows/codeql.yml
+index 9660820146..6c78ed0de0 100644
+--- a/.github/workflows/codeql.yml
++++ b/.github/workflows/codeql.yml
+@@ -56,7 +56,8 @@ jobs:
+         uses: github/codeql-action/analyze@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4.31.9
+ 
+   c:
+-    if: ${{ github.repository_owner == 'curl' || github.event_name != 'schedule' }}
++    if: false
++    # if: ${{ github.repository_owner == 'curl' || github.event_name != 'schedule' }}
+     name: 'C'
+     runs-on: ${{ matrix.platform == 'Linux' && 'ubuntu-latest' || 'windows-2022' }}
+     permissions:
+diff --git a/.github/workflows/configure-vs-cmake.yml b/.github/workflows/configure-vs-cmake.yml
+index 07e559cf6a..21a76a27dd 100644
+--- a/.github/workflows/configure-vs-cmake.yml
++++ b/.github/workflows/configure-vs-cmake.yml
+@@ -78,6 +78,7 @@ jobs:
+         run: ./.github/scripts/cmp-pkg-config.sh bld-am/curl-config bld-cm/curl-config
+ 
+   check-macos:
++    if: false
+     name: 'macOS'
+     runs-on: macos-latest
+     steps:
+@@ -129,6 +130,7 @@ jobs:
+         run: ./.github/scripts/cmp-pkg-config.sh bld-am/curl-config bld-cm/curl-config
+ 
+   check-windows:
++    if: false
+     name: 'Windows'
+     runs-on: ubuntu-latest
+     env:
+diff --git a/.github/workflows/curl-for-win.yml b/.github/workflows/curl-for-win.yml
+index ffdb7e3a7b..83f0c47cb3 100644
+--- a/.github/workflows/curl-for-win.yml
++++ b/.github/workflows/curl-for-win.yml
+@@ -69,6 +69,7 @@ jobs:
+             sh -c ./_ci-linux-debian.sh
+ 
+   linux-glibc-gcc-minimal:  # use gcc to minimize installed packages
++    if: false
+     name: 'Linux gcc glibc minimal (amd64)'
+     runs-on: ubuntu-latest
+     timeout-minutes: 5
+@@ -96,6 +97,7 @@ jobs:
+             sh -c ./_ci-linux-debian.sh
+ 
+   linux-musl-llvm:
++    if: false
+     name: 'Linux llvm MUSL (amd64, riscv64)'
+     runs-on: ubuntu-latest
+     timeout-minutes: 10
+@@ -123,6 +125,7 @@ jobs:
+             sh -c ./_ci-linux-debian.sh
+ 
+   mac-clang:
++    if: false
+     name: 'macOS clang (x86_64)'
+     runs-on: macos-latest
+     timeout-minutes: 10
+@@ -143,6 +146,7 @@ jobs:
+           sh -c ./_ci-mac-homebrew.sh
+ 
+   win-llvm:
++    if: false
+     name: 'Windows llvm (x64)'
+     runs-on: ubuntu-latest
+     timeout-minutes: 10
+@@ -170,6 +174,7 @@ jobs:
+             sh -c ./_ci-linux-debian.sh
+ 
+   win-gcc-zlibold-x64:
++    if: false
+     name: 'Windows gcc zlib-classic (x64)'
+     runs-on: ubuntu-latest
+     timeout-minutes: 10
+diff --git a/.github/workflows/distcheck.yml b/.github/workflows/distcheck.yml
+index ae7c827b22..9ff0f2aa94 100644
+--- a/.github/workflows/distcheck.yml
++++ b/.github/workflows/distcheck.yml
+@@ -70,6 +70,7 @@ jobs:
+           rm -rf curl-99.98.97
+ 
+   verify-out-of-tree-docs:
++    if: false
+     name: 'AM out-of-tree docs'
+     runs-on: ubuntu-latest
+     timeout-minutes: 10
+@@ -94,6 +95,7 @@ jobs:
+           rm -rf curl-99.98.97
+ 
+   verify-out-of-tree-autotools-debug:
++    if: false
+     name: 'AM out-of-tree (debug)'
+     runs-on: ubuntu-latest
+     timeout-minutes: 10
+@@ -120,6 +122,7 @@ jobs:
+           scripts/checksrc-all.pl
+ 
+   verify-out-of-tree-autotools:
++    if: false
+     name: 'AM out-of-tree !perl'
+     runs-on: ubuntu-latest
+     timeout-minutes: 10
+@@ -144,6 +147,7 @@ jobs:
+           popd
+ 
+   verify-in-tree-autotools:
++    if: false
+     name: 'AM in-tree !perl'
+     runs-on: ubuntu-latest
+     timeout-minutes: 10
+@@ -165,6 +169,7 @@ jobs:
+           curl-install/bin/curl --manual | wc -l | grep -v '^ *0$'
+ 
+   verify-out-of-tree-cmake:
++    if: false
+     name: 'CM out-of-tree !perl'
+     runs-on: ubuntu-latest
+     timeout-minutes: 5
+@@ -187,6 +192,7 @@ jobs:
+           curl-install/bin/curl --manual | wc -l | grep -v '^ *0$'
+ 
+   verify-in-tree-cmake:
++    if: false
+     name: 'CM in-tree !perl'
+     runs-on: ubuntu-latest
+     timeout-minutes: 5
+@@ -209,6 +215,7 @@ jobs:
+           curl-install/bin/curl --manual | wc -l | grep -v '^ *0$'
+ 
+   missing-files:
++    if: false
+     name: 'missing files'
+     runs-on: ubuntu-latest
+     timeout-minutes: 5
+@@ -226,6 +233,7 @@ jobs:
+         run: .github/scripts/distfiles.sh curl-99.98.97.tar.gz
+ 
+   reproducible-releases:
++    if: false
+     name: 'reproducible releases'
+     runs-on: ubuntu-latest
+     timeout-minutes: 10
+@@ -248,6 +256,7 @@ jobs:
+           ../scripts/verify-release curl-9.10.11.tar.gz
+ 
+   cmake-integration:
++    if: false
+     name: 'CM integration ${{ matrix.image }}'
+     runs-on: ${{ matrix.image }}
+     timeout-minutes: 15
+diff --git a/.github/workflows/http3-linux.yml b/.github/workflows/http3-linux.yml
+index 9f096fa4dc..1c8b89aa76 100644
+--- a/.github/workflows/http3-linux.yml
++++ b/.github/workflows/http3-linux.yml
+@@ -337,6 +337,7 @@ jobs:
+           make install
+ 
+   linux:
++    if: false
+     name: ${{ matrix.build.generate && 'CM' || 'AM' }} ${{ matrix.build.name }}
+     needs:
+       - build-cache
+diff --git a/.github/workflows/macos.yml b/.github/workflows/macos.yml
+index 259a3b66d6..133b68146f 100644
+--- a/.github/workflows/macos.yml
++++ b/.github/workflows/macos.yml
+@@ -204,6 +204,7 @@ jobs:
+           fi
+ 
+   macos:
++    if: false
+     name: "${{ matrix.build.generate && 'CM' || 'AM' }} ${{ matrix.build.compiler }} ${{ matrix.build.name }}"
+     runs-on: macos-15
+     timeout-minutes: 15
+@@ -547,6 +548,7 @@ jobs:
+           fi
+ 
+   combinations:  # Test buildability with host OS, Xcode / SDK, compiler, target-OS, built tool, combinations
++    if: false
+     name: "${{ matrix.build == 'cmake' && 'CM' || 'AM' }} ${{ matrix.compiler }} ${{ matrix.image }} ${{ matrix.xcode }}"
+     runs-on: ${{ matrix.image }}
+     timeout-minutes: 10
+diff --git a/.github/workflows/non-native.yml b/.github/workflows/non-native.yml
+index fb8ca3b314..ce8cf2df4d 100644
+--- a/.github/workflows/non-native.yml
++++ b/.github/workflows/non-native.yml
+@@ -83,6 +83,7 @@ jobs:
+             echo '::endgroup::'
+ 
+   openbsd:
++    if: false
+     name: 'OpenBSD, CM clang libressl ${{ matrix.arch }}'
+     runs-on: ubuntu-latest
+     timeout-minutes: 10
+@@ -128,6 +129,7 @@ jobs:
+             echo '::endgroup::'
+ 
+   freebsd:
++    if: false
+     name: "FreeBSD, ${{ matrix.build == 'cmake' && 'CM' || 'AM' }} ${{ matrix.compiler }} openssl${{ matrix.desc }} ${{ matrix.arch }}"
+     runs-on: ubuntu-latest
+     timeout-minutes: 15
+@@ -237,6 +239,7 @@ jobs:
+             fi
+ 
+   android:
++    if: false
+     name: "Android ${{ matrix.platform }}, ${{ matrix.build == 'cmake' && 'CM' || 'AM' }} ${{ matrix.name }} arm64"
+     runs-on: ubuntu-latest
+     timeout-minutes: 5
+@@ -330,8 +333,7 @@ jobs:
+             make -C bld examples
+           fi
+ 
+-  msdos:
+-    name: "MS-DOS, ${{ matrix.build == 'cmake' && 'CM' || 'AM' }} djgpp !ssl i586"
++  msdos:    if: false    name: "MS-DOS, ${{ matrix.build == 'cmake' && 'CM' || 'AM' }} djgpp !ssl i586"
+     runs-on: ubuntu-latest
+     timeout-minutes: 5
+     env:
+diff --git a/.github/workflows/windows.yml b/.github/workflows/windows.yml
+index 68ef3a6565..da6802937a 100644
+--- a/.github/workflows/windows.yml
++++ b/.github/workflows/windows.yml
+@@ -182,6 +182,7 @@ jobs:
+         run: du -sh .; echo; du -sh -t 250KB ./*; echo; du -h -t 250KB bld
+ 
+   msys2:  # both msys and mingw-w64
++    if: false
+     name: "${{ matrix.sys == 'msys' && 'msys2' || 'mingw' }}, ${{ matrix.build == 'cmake' && 'CM' || 'AM' }} ${{ matrix.env }} ${{ matrix.name }} ${{ matrix.test }}"
+     runs-on: ${{ matrix.image || 'windows-2022' }}
+     timeout-minutes: ${{ contains(matrix.tflags, '-t') && 14 || 10 }}
+@@ -412,6 +413,7 @@ jobs:
+         run: du -sh .; echo; du -sh -t 250KB ./*; echo; du -h -t 250KB bld
+ 
+   mingw-w64-standalone-downloads:
++    if: false
+     name: 'dl-mingw, CM ${{ matrix.ver }}-${{ matrix.env }} ${{ matrix.name }}'
+     runs-on: windows-2022
+     timeout-minutes: 10
+@@ -602,6 +604,7 @@ jobs:
+         run: du -sh .; echo; du -sh -t 250KB ./*; echo; du -h -t 250KB bld
+ 
+   linux-cross-mingw-w64:
++    if: false
+     name: "linux-mingw, ${{ matrix.build == 'cmake' && 'CM' || 'AM' }} ${{ matrix.compiler }}"
+     runs-on: ubuntu-latest
+     timeout-minutes: 10
+@@ -702,6 +705,7 @@ jobs:
+         run: du -sh .; echo; du -sh -t 250KB ./*; echo; du -h -t 250KB bld
+ 
+   msvc:
++    if: false
+     name: 'msvc, CM ${{ matrix.arch }}-${{ matrix.plat }} ${{ matrix.name }}'
+     runs-on: ${{ matrix.image || 'windows-2022' }}
+     timeout-minutes: ${{ matrix.arch == 'arm64' && 12 || 10 }}
+-- 
+2.48.0.rc2.windows.1
+

@@ -1,0 +1,212 @@
+From 0779b7ab747d07324987d65d5c2ea4b81c248bc4 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Javier=20Pim=C3=A1s?= <elpochodelagente@gmail.com>
+Date: Thu, 22 Jan 2026 17:20:40 -0300
+Subject: [PATCH] Disable upstream jobs in workflow files for testing purposes
+
+---
+ .github/workflows/appveyor-status.yml    | 3 ++-
+ .github/workflows/checkdocs.yml          | 1 +
+ .github/workflows/checkurls.yml          | 3 ++-
+ .github/workflows/codeql.yml             | 3 ++-
+ .github/workflows/configure-vs-cmake.yml | 1 +
+ .github/workflows/curl-for-win.yml       | 1 +
+ .github/workflows/distcheck.yml          | 1 +
+ .github/workflows/fuzz.yml               | 1 +
+ .github/workflows/http3-linux.yml        | 1 +
+ .github/workflows/label.yml              | 1 +
+ .github/workflows/linux-old.yml          | 1 +
+ .github/workflows/linux.yml              | 1 +
+ .github/workflows/macos.yml              | 1 +
+ .github/workflows/non-native.yml         | 1 +
+ .github/workflows/windows.yml            | 1 +
+ 15 files changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/.github/workflows/appveyor-status.yml b/.github/workflows/appveyor-status.yml
+index 197c5f26e5..45752d1212 100644
+--- a/.github/workflows/appveyor-status.yml
++++ b/.github/workflows/appveyor-status.yml
+@@ -15,9 +15,10 @@ permissions: {}
+ 
+ jobs:
+   split:
++    if: false
+     name: 'split'
+     runs-on: ubuntu-24.04-arm
+-    if: ${{ github.event.sender.login == 'appveyor[bot]' }}
++    # if: ${{ github.event.sender.login == 'appveyor[bot]' }}
+     permissions:
+       statuses: write  # To update build statuses
+     steps:
+diff --git a/.github/workflows/checkdocs.yml b/.github/workflows/checkdocs.yml
+index cfce5d9126..1714fce443 100644
+--- a/.github/workflows/checkdocs.yml
++++ b/.github/workflows/checkdocs.yml
+@@ -37,6 +37,7 @@ permissions: {}
+ jobs:
+   # config file help: https://github.com/amperser/proselint/
+   proselint:
++    if: false
+     name: 'proselint'
+     runs-on: ubuntu-24.04-arm
+     steps:
+diff --git a/.github/workflows/checkurls.yml b/.github/workflows/checkurls.yml
+index c1e9983c2c..2e967c70a2 100644
+--- a/.github/workflows/checkurls.yml
++++ b/.github/workflows/checkurls.yml
+@@ -23,7 +23,8 @@ permissions: {}
+ 
+ jobs:
+   linkcheck:
+-    if: ${{ github.repository_owner == 'curl' || github.event_name != 'schedule' }}
++    if: false
++    # if: ${{ github.repository_owner == 'curl' || github.event_name != 'schedule' }}
+     name: 'linkcheck'
+     runs-on: ubuntu-24.04-arm
+     steps:
+diff --git a/.github/workflows/codeql.yml b/.github/workflows/codeql.yml
+index bc94d451fc..9660820146 100644
+--- a/.github/workflows/codeql.yml
++++ b/.github/workflows/codeql.yml
+@@ -35,7 +35,8 @@ permissions: {}
+ 
+ jobs:
+   gha_python:
+-    if: ${{ github.repository_owner == 'curl' || github.event_name != 'schedule' }}
++    if: false
++    # if: ${{ github.repository_owner == 'curl' || github.event_name != 'schedule' }}
+     name: 'GHA and Python'
+     runs-on: ubuntu-latest
+     permissions:
+diff --git a/.github/workflows/configure-vs-cmake.yml b/.github/workflows/configure-vs-cmake.yml
+index fcab12a0c6..07e559cf6a 100644
+--- a/.github/workflows/configure-vs-cmake.yml
++++ b/.github/workflows/configure-vs-cmake.yml
+@@ -38,6 +38,7 @@ permissions: {}
+ 
+ jobs:
+   check-linux:
++    if: false
+     name: 'Linux'
+     runs-on: ubuntu-latest
+     steps:
+diff --git a/.github/workflows/curl-for-win.yml b/.github/workflows/curl-for-win.yml
+index 79e5d6e380..ffdb7e3a7b 100644
+--- a/.github/workflows/curl-for-win.yml
++++ b/.github/workflows/curl-for-win.yml
+@@ -39,6 +39,7 @@ env:
+ 
+ jobs:
+   linux-glibc-gcc:
++    if: false
+     name: 'Linux gcc glibc (amd64, arm64)'
+     runs-on: ubuntu-latest
+     timeout-minutes: 10
+diff --git a/.github/workflows/distcheck.yml b/.github/workflows/distcheck.yml
+index db610d378d..ae7c827b22 100644
+--- a/.github/workflows/distcheck.yml
++++ b/.github/workflows/distcheck.yml
+@@ -25,6 +25,7 @@ env:
+ 
+ jobs:
+   maketgz-and-verify-in-tree:
++    if: false
+     name: 'AM in-tree & maketgz'
+     runs-on: ubuntu-latest
+     timeout-minutes: 10
+diff --git a/.github/workflows/fuzz.yml b/.github/workflows/fuzz.yml
+index 45884515e8..4d6843d033 100644
+--- a/.github/workflows/fuzz.yml
++++ b/.github/workflows/fuzz.yml
+@@ -40,4 +40,5 @@ permissions: {}
+ 
+ jobs:
+   Fuzzing:
++    if: false
+     uses: curl/curl-fuzzer/.github/workflows/ci.yml@master  # zizmor: ignore[unpinned-uses]
+diff --git a/.github/workflows/http3-linux.yml b/.github/workflows/http3-linux.yml
+index 5a9e1fdd9e..9f096fa4dc 100644
+--- a/.github/workflows/http3-linux.yml
++++ b/.github/workflows/http3-linux.yml
+@@ -60,6 +60,7 @@ env:
+ 
+ jobs:
+   build-cache:
++    if: false
+     name: 'Build caches'
+     runs-on: ubuntu-latest
+ 
+diff --git a/.github/workflows/label.yml b/.github/workflows/label.yml
+index 0c169e6075..e70ba60046 100644
+--- a/.github/workflows/label.yml
++++ b/.github/workflows/label.yml
+@@ -21,6 +21,7 @@ permissions: {}
+ 
+ jobs:
+   label:
++    if: false
+     name: 'Labeler'
+     runs-on: ubuntu-latest
+     permissions:
+diff --git a/.github/workflows/linux-old.yml b/.github/workflows/linux-old.yml
+index 08d1d039b9..a9c6a02ac0 100644
+--- a/.github/workflows/linux-old.yml
++++ b/.github/workflows/linux-old.yml
+@@ -53,6 +53,7 @@ env:
+ 
+ jobs:
+   cmake-autotools:
++    if: false
+     name: 'autotools & cmake'
+     runs-on: ubuntu-latest
+     container: 'debian:stretch'
+diff --git a/.github/workflows/linux.yml b/.github/workflows/linux.yml
+index 5a48dbf6a8..c2008d23c2 100644
+--- a/.github/workflows/linux.yml
++++ b/.github/workflows/linux.yml
+@@ -59,6 +59,7 @@ env:
+ 
+ jobs:
+   linux:
++    if: false
+     name: ${{ matrix.build.generate && 'CM' || 'AM' }} ${{ matrix.build.name }}
+     runs-on: ${{ matrix.build.image || 'ubuntu-latest' }}
+     container: ${{ matrix.build.container }}
+diff --git a/.github/workflows/macos.yml b/.github/workflows/macos.yml
+index 443828146f..259a3b66d6 100644
+--- a/.github/workflows/macos.yml
++++ b/.github/workflows/macos.yml
+@@ -46,6 +46,7 @@ env:
+ 
+ jobs:
+   ios:
++    if: false
+     name: "iOS, ${{ (matrix.build.generator && format('CM-{0}', matrix.build.generator)) || (matrix.build.generate && 'CM' || 'AM' )}} ${{ matrix.build.name }} arm64"
+     runs-on: macos-latest
+     timeout-minutes: 10
+diff --git a/.github/workflows/non-native.yml b/.github/workflows/non-native.yml
+index 69c303eea4..fb8ca3b314 100644
+--- a/.github/workflows/non-native.yml
++++ b/.github/workflows/non-native.yml
+@@ -37,6 +37,7 @@ env:
+ 
+ jobs:
+   netbsd:
++    if: false
+     name: 'NetBSD, CM clang openssl ${{ matrix.arch }}'
+     runs-on: ubuntu-latest
+     timeout-minutes: 10
+diff --git a/.github/workflows/windows.yml b/.github/workflows/windows.yml
+index 2ac428df9f..68ef3a6565 100644
+--- a/.github/workflows/windows.yml
++++ b/.github/workflows/windows.yml
+@@ -37,6 +37,7 @@ env:
+ 
+ jobs:
+   cygwin:
++    if: false
+     name: "cygwin, ${{ matrix.build == 'cmake' && 'CM' || 'AM' }} ${{ matrix.platform }} ${{ matrix.name }}"
+     runs-on: windows-2022
+     timeout-minutes: 10
+-- 
+2.48.0.rc2.windows.1
+

@@ -1,0 +1,27 @@
+From 7959bd2c5c5569f16695d88a24e04cc32e61b6dc Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Javier=20Pim=C3=A1s?= <elpochodelagente@gmail.com>
+Date: Fri, 23 Jan 2026 10:22:05 -0300
+Subject: [PATCH] fix msdos job regression in non-native workflow
+
+---
+ .github/workflows/non-native.yml | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/.github/workflows/non-native.yml b/.github/workflows/non-native.yml
+index ce8cf2df4d..6eb79fc9a7 100644
+--- a/.github/workflows/non-native.yml
++++ b/.github/workflows/non-native.yml
+@@ -333,7 +333,9 @@ jobs:
+             make -C bld examples
+           fi
+ 
+-  msdos:    if: false    name: "MS-DOS, ${{ matrix.build == 'cmake' && 'CM' || 'AM' }} djgpp !ssl i586"
++  msdos:
++    if: false
++    name: "MS-DOS, ${{ matrix.build == 'cmake' && 'CM' || 'AM' }} djgpp !ssl i586"
+     runs-on: ubuntu-latest
+     timeout-minutes: 5
+     env:
+-- 
+2.48.0.rc2.windows.1
+

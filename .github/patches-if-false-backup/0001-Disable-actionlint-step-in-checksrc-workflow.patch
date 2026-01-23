@@ -1,0 +1,24 @@
+From fb9d8a92f8bc519d3ebd664b4376ce8f58228930 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Javier=20Pim=C3=A1s?= <elpochodelagente@gmail.com>
+Date: Fri, 23 Jan 2026 10:23:49 -0300
+Subject: [PATCH] Disable actionlint step in checksrc workflow
+
+---
+ .github/workflows/checksrc.yml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/.github/workflows/checksrc.yml b/.github/workflows/checksrc.yml
+index 90bd62f19c..b0e585e10e 100644
+--- a/.github/workflows/checksrc.yml
++++ b/.github/workflows/checksrc.yml
+@@ -154,6 +154,7 @@ jobs:
+           zizmor --pedantic .github/workflows/*.yml .github/dependabot.yml
+ 
+       - name: 'actionlint'
++        if: false
+         run: |
+           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+           export SHELLCHECK_OPTS='--exclude=1090,1091,2086,2153 --enable=avoid-nullary-conditions,deprecate-which'
+-- 
+2.48.0.rc2.windows.1
+
