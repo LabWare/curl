@@ -73,6 +73,8 @@ jobs:
 
       - name: Apply patches and create lw-curl tags
         if: steps.detect-tags.outputs.new_tags != ''
+        env:
+          NEW_TAGS: ${{ steps.detect-tags.outputs.new_tags }}
         run: |
           git checkout master
           git format-patch upstream-master --stdout > /tmp/labware-patches.patch
@@ -82,7 +84,7 @@ jobs:
             exit 0
           fi
           
-          for tag in ${{ steps.detect-tags.outputs.new_tags }}; do
+          for tag in $NEW_TAGS; do
             echo "Processing: $tag"
             LW_TAG="lw-${tag}"
             
