@@ -108,16 +108,11 @@ jobs:
 
       - name: Upload to GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
-        shell: bash
+        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
           REF_NAME: ${{ github.ref_name }}
         run: |
-          zip -j dist/bin/curl-win32-x86.zip dist/bin/curl.exe dist/bin/libcurl.dll
-          gh release upload "$REF_NAME" \
-            dist/bin/curl-win32-x86.zip \
-            --clobber || \
-          gh release create "$REF_NAME" \
-            --title "$REF_NAME" \
-            --notes "## Win32 (x86) builds" \
-            dist/bin/curl-win32-x86.zip
+          $ErrorActionPreference = 'Stop'
+          Compress-Archive -Path dist/bin/curl.exe, dist/bin/libcurl.dll -DestinationPath dist/bin/curl-win32-x86.zip
+          gh release create $env:REF_NAME --title $env:REF_NAME --notes "## Win32 (x86) builds" dist/bin/curl-win32-x86.zip
