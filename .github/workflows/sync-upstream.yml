@@ -95,16 +95,12 @@ jobs:
 
             if git am --3way /tmp/labware-patches.patch; then
               # Delete upstream workflow files by cherry-picking deletion branch
-              if git cherry-pick --strategy=recursive -X theirs origin/lw-delete-workflows; then
-                echo "Applied workflow file deletions"
-              else
-                echo "Cherry-pick failed, manually deleting workflow files"
-                git cherry-pick --abort || true
-                for wf in appveyor-status.yml checkdocs.yml checkurls.yml codeql.yml configure-vs-cmake.yml curl-for-win.yml distcheck.yml fuzz.yml http3-linux.yml label.yml linux-old.yml linux.yml macos.yml non-native.yml windows.yml; do
-                  [ -f ".github/workflows/${wf}" ] && git rm -f ".github/workflows/${wf}"
-                done
-                git commit -m "Delete upstream workflow files that do not need to run on this fork" || true
+              if ! git cherry-pick origin/lw-delete-workflows; then
+                # Resolve modify/delete conflicts by accepting deletions
+                git diff --name-only --diff-filter=U | xargs -r git rm -f
+                git cherry-pick --continue --no-edit
               fi
+              echo "Applied workflow file deletions"
 
               git tag -a "${LW_TAG}" -m "Labware release based on ${tag}"
               echo "Created tag: ${LW_TAG}"
