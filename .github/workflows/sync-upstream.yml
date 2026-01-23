@@ -78,19 +78,19 @@ jobs:
         run: |
           git checkout master
 
+          # Get all commits from upstream-master to master
+          ALL_COMMITS=$(git rev-list upstream-master..master --reverse)
+
           # Generate patches excluding [lw-delete-jobs] commits
-          git rev-list upstream-master..master --reverse | while read sha; do
-            if ! git log -1 --format=%s "$sha" | grep -q '^\[lw-delete-jobs\]'; then
+          DELETE_COMMITS=""
+          for sha in $ALL_COMMITS; do
+            SUBJECT=$(git log -1 --format=%s "$sha")
+            if echo "$SUBJECT" | grep -q '^\[lw-delete-jobs\]'; then
+              DELETE_COMMITS="$DELETE_COMMITS $sha"
+            else
               git format-patch -1 "$sha" --stdout >> /tmp/labware-patches.patch
             fi
           done
-
-          # Get [lw-delete-jobs] commits to apply separately
-          DELETE_COMMITS=$(git rev-list upstream-master..master --reverse | while read sha; do
-            if git log -1 --format=%s "$sha" | grep -q '^\[lw-delete-jobs\]'; then
-              echo "$sha"
-            fi
-          done)
 
           if [ ! -s /tmp/labware-patches.patch ]; then
             echo "No patches to apply"
