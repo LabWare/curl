@@ -88,6 +88,9 @@ if(LIBIDN2_FOUND)
   if(CURL_STATIC_DEPS AND NOT _libidn2_FOUND)
     find_library(_libidn2_unistring NAMES "unistring" "libunistring" REQUIRED)
     list(APPEND _libidn2_LIBRARIES ${_libidn2_unistring})
+    # unistring requires iconv
+    find_library(_libidn2_iconv NAMES "iconv" "libiconv" REQUIRED)
+    list(APPEND _libidn2_LIBRARIES ${_libidn2_iconv})
   endif()
 
   if(NOT TARGET CURL::libidn2)

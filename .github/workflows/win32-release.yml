@@ -62,7 +62,7 @@ jobs:
           $vcpkg = "$env:RUNNER_TEMP\vcpkg\vcpkg.exe"
           & $vcpkg remove --outdated --recurse || $true
           & $vcpkg install `
-            zlib brotli zstd nghttp2 icu libiconv libunistring libidn2 libpsl `
+            zlib brotli zstd nghttp2 libiconv libunistring libidn2 `
             --triplet x86-windows-static `
             --clean-after-build
 

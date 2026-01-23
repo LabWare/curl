@@ -29,12 +29,11 @@ cmake -S . -B build-win32 `
     -DCURL_USE_OPENSSL=OFF `
     -DUSE_NGHTTP2=ON `
     -DUSE_LIBIDN2=ON `
-    -DCURL_USE_LIBPSL=ON `
+    -DCURL_USE_LIBPSL=OFF `
     -DBUILD_SHARED_LIBS=ON `
     -DBUILD_STATIC_LIBS=ON `
     -DBUILD_CURL_EXE=ON `
     -DBUILD_STATIC_CURL=ON `
-    -DCURL_STATIC_CRT=ON `
     -DCURL_STATIC_DEPS=ON
 
 cmake --build build-win32 --config Release
