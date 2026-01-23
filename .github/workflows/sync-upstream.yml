@@ -84,6 +84,9 @@ jobs:
             exit 0
           fi
 
+          # Fetch the lw-delete-workflows branch for file deletions
+          git fetch origin lw-delete-workflows || true
+
           for tag in $NEW_TAGS; do
             echo "Processing: $tag"
             LW_TAG="lw-${tag}"
@@ -91,6 +94,18 @@ jobs:
             git checkout -B "temp-${tag}" "${tag}"
 
             if git am --3way /tmp/labware-patches.patch; then
+              # Delete upstream workflow files by cherry-picking deletion branch
+              if git cherry-pick --strategy=recursive -X theirs origin/lw-delete-workflows; then
+                echo "Applied workflow file deletions"
+              else
+                echo "Cherry-pick failed, manually deleting workflow files"
+                git cherry-pick --abort || true
+                for wf in appveyor-status.yml checkdocs.yml checkurls.yml codeql.yml configure-vs-cmake.yml curl-for-win.yml distcheck.yml fuzz.yml http3-linux.yml label.yml linux-old.yml linux.yml macos.yml non-native.yml windows.yml; do
+                  [ -f ".github/workflows/${wf}" ] && git rm -f ".github/workflows/${wf}"
+                done
+                git commit -m "Delete upstream workflow files that do not need to run on this fork" || true
+              fi
+
               git tag -a "${LW_TAG}" -m "Labware release based on ${tag}"
               echo "Created tag: ${LW_TAG}"
             else
