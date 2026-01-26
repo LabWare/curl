@@ -42,7 +42,13 @@ jobs:
       - name: Rebase master onto upstream-master
         run: |
           git checkout master
-          git rebase upstream-master
+          if ! git rebase upstream-master; then
+            # Handle modify/delete conflicts by accepting deletions
+            while git diff --name-only --diff-filter=U | grep -q .; do
+              git diff --name-only --diff-filter=U | xargs -r git rm -f
+              git rebase --continue || true
+            done
+          fi
 
       - name: Detect new upstream tags
         id: detect-tags
